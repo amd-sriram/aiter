@@ -57,6 +57,16 @@ def _sum_combine(a, b):
 
 
 @gluon.jit
+def _sanitize_logits(logits):
+    # Sparse-attention top-k consumers rank raw float bit patterns and leave
+    # their output slots unwritten when an input is NaN, which surfaces as an
+    # out-of-range token index and an out-of-bounds KV read. A NaN compares
+    # false here, so it collapses to -inf along with the padding lanes and stays
+    # unselectable.
+    return tl.where(logits > float("-inf"), logits, float("-inf"))
+
+
+@gluon.jit
 def _gluon_deepgemm_fp8_paged_mqa_logits(
     batch_size,
     next_n,
@@ -301,6 +311,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits(
         o = tl.where(mask[None, :], o, float("-inf"))
 
         logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+        logits = _sanitize_logits(logits)
         gl.amd.cdna3.buffer_store(
             logits,
             ptr=OutLogits_buffer
@@ -335,6 +346,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits(
     o = tl.where(mask[None, :], o, float("-inf"))
 
     logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+    logits = _sanitize_logits(logits)
     gl.amd.cdna3.buffer_store(
         logits,
         ptr=OutLogits_buffer
@@ -592,6 +604,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle(
             valid = (context_idx + col) <= (context_length - next_n + pid_next_n)
             o = tl.where(valid[None, :], o, float("-inf"))
             logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+            logits = _sanitize_logits(logits)
 
             store_off = context_idx + col
             gl.amd.cdna3.buffer_store(
@@ -802,6 +815,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle(
         _amd_s_set_prio(1)
 
         logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+        logits = _sanitize_logits(logits)
         gl.amd.cdna3.buffer_store(
             logits,
             ptr=OutLogits_buffer
@@ -867,6 +881,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle(
             _amd_s_set_prio(1)
 
             logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+            logits = _sanitize_logits(logits)
             gl.amd.cdna3.buffer_store(
                 logits,
                 ptr=OutLogits_buffer
@@ -939,6 +954,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle(
             _amd_s_set_prio(0)
 
             logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+            logits = _sanitize_logits(logits)
             gl.amd.cdna3.buffer_store(
                 logits,
                 ptr=OutLogits_buffer
@@ -982,6 +998,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle(
         )
 
         logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+        logits = _sanitize_logits(logits)
         logits = tl.where(mask, logits, float("-inf"))
         gl.amd.cdna3.buffer_store(
             logits,
@@ -1139,6 +1156,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle(
         )
 
         logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+        logits = _sanitize_logits(logits)
         logits = tl.where(mask, logits, float("-inf"))
         gl.amd.cdna3.buffer_store(
             logits,
@@ -1217,6 +1235,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle(
             _amd_s_set_prio(1)
 
             logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+            logits = _sanitize_logits(logits)
             gl.amd.cdna3.buffer_store(
                 logits,
                 ptr=OutLogits_buffer
@@ -1298,6 +1317,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle(
             )
 
             logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+            logits = _sanitize_logits(logits)
             logits = tl.where(mask, logits, float("-inf"))
             gl.amd.cdna3.buffer_store(
                 logits,
@@ -1341,6 +1361,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle(
         )
 
         logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+        logits = _sanitize_logits(logits)
         logits = tl.where(mask, logits, float("-inf"))
         gl.amd.cdna3.buffer_store(
             logits,
@@ -1651,6 +1672,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle_varctx(
         _amd_s_set_prio(1)
 
         logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+        logits = _sanitize_logits(logits)
         gl.amd.cdna3.buffer_store(
             logits,
             ptr=OutLogits_buffer
@@ -1716,6 +1738,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle_varctx(
             _amd_s_set_prio(1)
 
             logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+            logits = _sanitize_logits(logits)
             gl.amd.cdna3.buffer_store(
                 logits,
                 ptr=OutLogits_buffer
@@ -1788,6 +1811,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle_varctx(
             _amd_s_set_prio(0)
 
             logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+            logits = _sanitize_logits(logits)
             gl.amd.cdna3.buffer_store(
                 logits,
                 ptr=OutLogits_buffer
@@ -1831,6 +1855,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle_varctx(
         )
 
         logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+        logits = _sanitize_logits(logits)
         logits = tl.where(mask, logits, float("-inf"))
         gl.amd.cdna3.buffer_store(
             logits,
@@ -1988,6 +2013,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle_varctx(
         )
 
         logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+        logits = _sanitize_logits(logits)
         logits = tl.where(mask, logits, float("-inf"))
         gl.amd.cdna3.buffer_store(
             logits,
@@ -2066,6 +2092,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle_varctx(
             _amd_s_set_prio(1)
 
             logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+            logits = _sanitize_logits(logits)
             gl.amd.cdna3.buffer_store(
                 logits,
                 ptr=OutLogits_buffer
@@ -2147,6 +2174,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle_varctx(
             )
 
             logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+            logits = _sanitize_logits(logits)
             logits = tl.where(mask, logits, float("-inf"))
             gl.amd.cdna3.buffer_store(
                 logits,
@@ -2190,6 +2218,7 @@ def _gluon_deepgemm_fp8_paged_mqa_logits_preshuffle_varctx(
         )
 
         logits = gl.reduce(o, axis=0, combine_fn=_sum_combine)
+        logits = _sanitize_logits(logits)
         logits = tl.where(mask, logits, float("-inf"))
         gl.amd.cdna3.buffer_store(
             logits,
