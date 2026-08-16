@@ -485,13 +485,23 @@ def deepgemm_fp8_paged_mqa_logits(
             WavePerEU = 1
 
     TileQCount = batch_size * next_n
-    SplitKV = (
-        (max(1, TotalCuCount // TileQCount) + 4)
-        // 5
-        * 5
-        * WavePerEU
-        * (2 if get_gfx() == "gfx1250" else 1)
-    )
+    # The launch is TileQCount * SplitKV CTAs, so WavePerEU workgroups per CU means
+    # a grid of WavePerEU * TotalCuCount. Rounding TotalCuCount // TileQCount up to
+    # a multiple of 5 overshoots that by up to 25%: on a 256-CU part every
+    # TileQCount of 16/32/64 ends up at 640 CTAs, i.e. 2.5 per CU, where the
+    # round-robin makespan carries a whole extra CTA. Taking the target exactly is
+    # worth 12-28% on MI355X over contexts 1K-128K.
+    #
+    # Only do so when TileQCount divides the target. Otherwise the grid has to be
+    # rounded again and lands on a quantisation point worse than the current value
+    # (measured: TileQCount 96 -> 2.25 CTAs/CU and 516 -> 2.02 CTAs/CU regress by
+    # 18-31%, while the value below is within 1% of the best split for both).
+    TargetCtaCount = WavePerEU * TotalCuCount
+    if TargetCtaCount % TileQCount == 0:
+        SplitKV = TargetCtaCount // TileQCount
+    else:
+        SplitKV = (max(1, TotalCuCount // TileQCount) + 4) // 5 * 5 * WavePerEU
+    SplitKV *= 2 if get_gfx() == "gfx1250" else 1
 
     assert ChunkK % KVBlockSize == 0 or KVBlockSize % ChunkK == 0
     assert block_Size == KVBlockSize
