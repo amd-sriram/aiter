@@ -48,7 +48,9 @@ def _make_inputs(batch_size, next_n, context_len):
         1, 64, (num_blocks, BLOCK_SIZE, 1, HEAD_DIM + 4), dtype=torch.uint8, device=dev
     )
     # the 4 fp8 bytes after each packed token are read as one fp32 scale
-    kv_bits[..., HEAD_DIM:] = torch.tensor([0, 0, 128, 63], dtype=torch.uint8, device=dev)
+    kv_bits[..., HEAD_DIM:] = torch.tensor(
+        [0, 0, 128, 63], dtype=torch.uint8, device=dev
+    )
     kv_cache = kv_bits.view(dtypes.fp8)
 
     weights = torch.rand((batch_size * next_n, HEADS), dtype=torch.float32, device=dev)
@@ -56,7 +58,9 @@ def _make_inputs(batch_size, next_n, context_len):
     # distinct blocks per sequence, shuffled, so a wrong split cannot alias its way
     # to the right answer
     block_tables = (
-        torch.randperm(num_blocks, device=dev).to(torch.int32).view(batch_size, max_block_len)
+        torch.randperm(num_blocks, device=dev)
+        .to(torch.int32)
+        .view(batch_size, max_block_len)
     )
     return q_fp8, kv_cache, weights, context_lens, block_tables
 
@@ -99,7 +103,9 @@ def test_logits_independent_of_splitkv(batch_size, next_n, context_len):
     inputs = _make_inputs(batch_size, next_n, context_len)
 
     ref = _run(inputs, context_len, TOTAL_CU_COUNTS[0])
-    assert not bool((ref == SENTINEL).any()), "reference left part of the output unwritten"
+    assert not bool(
+        (ref == SENTINEL).any()
+    ), "reference left part of the output unwritten"
 
     for total_cu_count in TOTAL_CU_COUNTS[1:]:
         got = _run(inputs, context_len, total_cu_count)
