@@ -461,7 +461,7 @@ def deepgemm_fp8_paged_mqa_logits(
     q_fp8: torch.Tensor,  # dtype = float8
     kv_cache,
     weights: torch.Tensor,  # dtype = float32
-    out_logits: torch.Tensor,  # dtype = float32
+    out_logits: torch.Tensor,  # dtype = float32, stored entries are never NaN
     context_lens: torch.Tensor,
     kv_indices: torch.Tensor,
     max_model_len: int,
