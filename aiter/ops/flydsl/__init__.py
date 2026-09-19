@@ -84,6 +84,14 @@ _LAZY_IMPORTS = {
         ".gather_kv_b_proj",
         "gather_kv_b_proj_flydsl_supported",
     ),
+    "flydsl_top_k_per_row_decode": (
+        ".topk_per_row_decode",
+        "flydsl_top_k_per_row_decode",
+    ),
+    "flydsl_top_k_per_row_decode_workspace_size": (
+        ".topk_per_row_decode",
+        "flydsl_top_k_per_row_decode_workspace_size",
+    ),
 }
 
 __all__ = [
@@ -104,6 +112,8 @@ __all__ = [
     "flydsl_pa_mqa_logits_fp4_varqlen",
     "flydsl_preshuffle_gemm_a8",
     "flydsl_qk_norm_rope_quant",
+    "flydsl_top_k_per_row_decode",
+    "flydsl_top_k_per_row_decode_workspace_size",
     "gather_kv_b_proj_flydsl",
     "gather_kv_b_proj_flydsl_supported",
 ]
