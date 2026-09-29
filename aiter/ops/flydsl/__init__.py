@@ -53,6 +53,10 @@ _LAZY_IMPORTS = {
         ".fp8_mqa_logits_kernels",
         "flydsl_fp8_mqa_logits",
     ),
+    "flydsl_fp8_paged_mqa_local_topk": (
+        ".fp8_paged_mqa_local_topk",
+        "flydsl_fp8_paged_mqa_local_topk",
+    ),
     "flydsl_fp8_paged_mqa_logits": (
         ".kernels.mqa_logits.fp8_paged_mqa_logits_gfx950",
         "flydsl_fp8_paged_mqa_logits",
@@ -60,6 +64,10 @@ _LAZY_IMPORTS = {
     "flydsl_fp8_paged_mqa_logits_gfx950": (
         ".kernels.mqa_logits.fp8_paged_mqa_logits_gfx950",
         "flydsl_fp8_paged_mqa_logits_gfx950",
+    ),
+    "flydsl_fp8_paged_mqa_topk": (
+        ".fp8_paged_mqa_local_topk",
+        "flydsl_fp8_paged_mqa_topk",
     ),
     "flydsl_hgemm": (".gemm_kernels", "flydsl_hgemm"),
     "flydsl_hstu_attention": (
@@ -122,8 +130,10 @@ __all__ = [
     "flydsl_flash_attn_fp8_supported",
     "flydsl_flash_attn_func",
     "flydsl_fp8_mqa_logits",
+    "flydsl_fp8_paged_mqa_local_topk",
     "flydsl_fp8_paged_mqa_logits",
     "flydsl_fp8_paged_mqa_logits_gfx950",
+    "flydsl_fp8_paged_mqa_topk",
     "flydsl_hgemm",
     "flydsl_hstu_attention",
     "flydsl_hstu_attention_bwd",
