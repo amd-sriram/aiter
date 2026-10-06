@@ -54,6 +54,12 @@ SHAPES = [
     (384, 7168, 256, 8),  # Kimi-K2 TP=8
     (512, 4096, 512, 10),  # Qwen3.5 TP=1
     (513, 4096, 512, 11),  # Qwen3.5 shared-expert variant
+    (288, 4096, 1024, 8),  # GLM-5.3-Flash TP=2
+    (288, 4096, 512, 8),  # GLM-5.3-Flash TP=4
+    (288, 4096, 256, 8),  # GLM-5.3-Flash TP=8
+    (289, 4096, 1024, 9),  # GLM-5.3-Flash TP=2 shared-expert variant
+    (289, 4096, 512, 9),  # GLM-5.3-Flash TP=4 shared-expert variant
+    (289, 4096, 256, 9),  # GLM-5.3-Flash TP=8 shared-expert variant
 ]
 
 
