@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2024-2026, Advanced Micro Devices, Inc. All rights reserved.
 
+import functools
+
 import torch
 import triton
 
@@ -52,6 +54,17 @@ def _use_gluon(backend: str | None, supported: bool, requirement: str) -> bool:
     if backend == "gluon" and not supported:
         raise RuntimeError(f"The Gluon backend requires {requirement}")
     return supported if backend is None else backend == "gluon"
+
+
+@functools.cache
+def _gluon_has_scaled_downcast() -> bool:
+    # The gfx950 Gluon quant kernels need gl.amd.cdna4.scaled_downcast, which
+    # Triton 3.8 does not have.
+    try:
+        from triton.experimental.gluon.language.amd import cdna4
+    except ImportError:
+        return False
+    return hasattr(cdna4, "scaled_downcast")
 
 
 def static_per_tensor_quant_fp8_i8(
@@ -303,8 +316,11 @@ def dynamic_mxfp4_quant(
     # everything else uses the Triton path below.
     if _use_gluon(
         backend,
-        arch_info.get_arch() == "gfx950" and x.dtype == torch.bfloat16 and not use_sr,
-        "gfx950, bf16 input and use_sr=False",
+        arch_info.get_arch() == "gfx950"
+        and x.dtype == torch.bfloat16
+        and not use_sr
+        and _gluon_has_scaled_downcast(),
+        "gfx950, bf16 input, use_sr=False and Gluon cdna4.scaled_downcast",
     ):
         from aiter.ops.triton._gluon_kernels.gfx950.quant.quant import (
             gluon_dynamic_mxfp4_quant_kernel_gfx950,
@@ -514,8 +530,10 @@ def dynamic_mxfp8_quant(
         backend,
         arch_info.get_arch() == "gfx950"
         and x.dtype == torch.bfloat16
-        and quant_dtype == torch.float8_e4m3fn,
-        "gfx950, bf16 input and quant_dtype=torch.float8_e4m3fn",
+        and quant_dtype == torch.float8_e4m3fn
+        and _gluon_has_scaled_downcast(),
+        "gfx950, bf16 input, quant_dtype=torch.float8_e4m3fn and Gluon "
+        "cdna4.scaled_downcast",
     ):
         from aiter.ops.triton._gluon_kernels.gfx950.quant.quant import (
             gluon_dynamic_mxfp8_quant_kernel_gfx950,
